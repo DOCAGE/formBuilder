@@ -21,7 +21,7 @@ export default class controlTinymce extends controlTextarea {
    * configure the tinymce editor requirements
    */
   configure() {
-    this.js = ['https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js']
+      this.js = ['https://cdnjs.cloudflare.com/ajax/libs/tinymce/4.9.11/tinymce.min.js']
 
     // additional javascript config
     if (this.classConfig.js) {
@@ -72,32 +72,29 @@ export default class controlTinymce extends controlTextarea {
    * When the element is rendered into the DOM, execute the following code to initialise it
    * @param {Object} evt - event
    */
-  onRender(evt) {
+    onRender(evt) {
     if (window.tinymce.editors[this.id]) {
       window.tinymce.editors[this.id].remove()
     }
 
     // define options & allow them to be overwritten in the class config
     const options = jQuery.extend(this.editorOptions, this.classConfig)
+
+    options.init_instance_callback = function (inst) {
+        // after editor is initialized use the textarea user data to set the contents
+        inst.setContent($('[name="' + inst.id + '"]').attr('user-data'))
+        // if the textarea is disabled then the editor should be as well (display form rather than edit)
+        if ($('[name="' + inst.id + '"]').attr('disabled') == 'disabled') {
+            inst.getBody().setAttribute('contenteditable', 'false')
+        }
+    }
+
     options.target = this.field
 
     setTimeout(() => {
       // initialise the editor
       window.tinymce.init(options)
     }, 100)
-
-    // Set userData
-    if (this.config.userData) {
-      window.tinymce.editors[this.id].setContent(this.parsedHtml(this.config.userData[0]))
-    }
-
-    if (window.lastFormBuilderCopiedTinyMCE) {
-      const timeout = setTimeout(() => {
-        window.tinymce.editors[this.id].setContent(this.parsedHtml(window.lastFormBuilderCopiedTinyMCE))
-        window.lastFormBuilderCopiedTinyMCE = null
-        clearTimeout(timeout)
-      }, 300)
-    }
 
     return evt
   }
